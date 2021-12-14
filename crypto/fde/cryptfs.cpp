@@ -132,6 +132,8 @@ static char *saved_mount_point;
 static int  master_key_saved = 0;
 static struct crypt_persist_data *persist_data = NULL;
 
+static const std::string kPkmBlob("pKMblob\x00", 8);
+
 static int previous_type;
 
 static char key_fname[PROPERTY_VALUE_MAX] = "";
@@ -607,6 +609,17 @@ initfail:
             ftr->keymaster_blob, KEYMASTER_BLOB_SIZE, &ftr->keymaster_blob_size);
 #endif //TW_KEYMASTER_MAX_API == 3
 #if TW_KEYMASTER_MAX_API >= 4
+
+   size_t sizeof_junk = kPkmBlob.size();
+    if ( (sizeof_junk <= ftr->keymaster_blob_size) &&
+          (memcmp(ftr->keymaster_blob,kPkmBlob.data(),sizeof_junk) == 0) ) {
+
+        // This is an Android 12 keymaster_key_blob.  The format is different from previous OS versions.
+        // We can just remove the useless bytes at the beginning, and then it will be compatible with previous versions.
+        ftr->keymaster_blob_size -= sizeof_junk;
+        memmove(ftr->keymaster_blob, ftr->keymaster_blob + sizeof_junk, ftr->keymaster_blob_size);
+    }
+
     for (int c = 1;c <= 20;c++) { // 20 tries are enough for signing keymaster
         if (c > 2)
             usleep(5000); // if failed in two tries lets rest
