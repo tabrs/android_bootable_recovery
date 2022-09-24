@@ -39,25 +39,17 @@ std::unique_ptr<GRSurfaceFbdev> GRSurfaceFbdev::Create(size_t width, size_t heig
 }
 
 void MinuiBackendFbdev::Blank(bool blank) {
-#if defined(TW_NO_SCREEN_BLANK) && defined(TW_BRIGHTNESS_PATH) && defined(TW_MAX_BRIGHTNESS)
-    int fd;
-    char brightness[4];
-    snprintf(brightness, 4, "%03d", TW_MAX_BRIGHTNESS/2);
+  int ret = ioctl(fb_fd, FBIOBLANK, blank ? FB_BLANK_POWERDOWN : FB_BLANK_UNBLANK);
+  if (ret < 0) perror("ioctl(): blank");
+}
 
-    fd = open(TW_BRIGHTNESS_PATH, O_RDWR);
-    if (fd < 0) {
-        perror("cannot open LCD backlight");
-        return;
-    }
-    write(fd, blank ? "000" : brightness, 3);
-    close(fd);
-#else
-    int ret;
+void MinuiBackendFbdev::Blank(bool blank, DrmConnector index) {
+  fprintf(stderr, "Unsupported multiple connectors, blank = %d, index = %d\n", blank, index);
+}
 
-    ret = ioctl(fb_fd, FBIOBLANK, blank ? FB_BLANK_POWERDOWN : FB_BLANK_UNBLANK);
-    if (ret < 0)
-        perror("ioctl(): blank");
-#endif
+bool MinuiBackendFbdev::HasMultipleConnectors() {
+  fprintf(stderr, "Unsupported multiple connectors\n");
+  return false;
 }
 
 void MinuiBackendFbdev::SetDisplayedFramebuffer(size_t n) {
@@ -148,8 +140,6 @@ GRSurface* MinuiBackendFbdev::Init() {
   SetDisplayedFramebuffer(0);
 
   printf("framebuffer: %d (%zu x %zu)\n", fb_fd.get(), gr_draw->width, gr_draw->height);
-
-  Blank(true);
   Blank(false);
 
   return gr_draw;

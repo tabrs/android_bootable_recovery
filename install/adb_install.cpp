@@ -95,6 +95,7 @@ static auto AdbInstallPackageHandler(InstallResult* result) {
   // because the minadbd service has already issued an install command. FUSE_SIDELOAD_HOST_PATHNAME
   // will start to exist once the host connects and starts serving a package. Poll for its
   // appearance. (Note that inotify doesn't work with FUSE.)
+  //auto ui = device->GetUI();
   constexpr int ADB_INSTALL_TIMEOUT = 15;
   bool should_continue = true;
   *result = INSTALL_ERROR;
@@ -350,15 +351,8 @@ static void CreateMinadbdServiceAndExecuteCommands(
 
   InstallResult install_result = INSTALL_ERROR;
   std::map<MinadbdCommand, CommandFunction> command_map{
-  { MinadbdCommand::kInstall, std::bind(&AdbInstallPackageHandler, &install_result) },
-  { MinadbdCommand::kRebootAndroid, std::bind(&AdbRebootHandler, MinadbdCommand::kRebootAndroid,
-                                              &install_result, reboot_action) },
-  { MinadbdCommand::kRebootBootloader,
-    std::bind(&AdbRebootHandler, MinadbdCommand::kRebootBootloader, &install_result,
-              reboot_action) },
-  { MinadbdCommand::kRebootFastboot, std::bind(&AdbRebootHandler, MinadbdCommand::kRebootFastboot,
-                                                &install_result, reboot_action) },
-  { MinadbdCommand::kRebootRecovery, std::bind(&AdbRebootHandler, MinadbdCommand::kRebootRecovery,
+    { MinadbdCommand::kInstall, std::bind(&AdbInstallPackageHandler, &install_result) },
+    { MinadbdCommand::kRebootAndroid, std::bind(&AdbRebootHandler, MinadbdCommand::kRebootAndroid,
                                                 &install_result, reboot_action) },
   { MinadbdCommand::kRebootRescue,
     std::bind(&AdbRebootHandler, MinadbdCommand::kRebootRescue, &install_result, reboot_action) },
@@ -371,7 +365,7 @@ static void CreateMinadbdServiceAndExecuteCommands(
         "to the device with \"adb sideload <filename>\"...\n");
   } else {
     command_map.emplace(MinadbdCommand::kWipeData, [&device]() {
-      bool result = WipeData(device, false);
+      bool result = WipeData(device);
       return std::make_pair(result, true);
     });
     command_map.emplace(MinadbdCommand::kNoOp, []() { return std::make_pair(true, true); });

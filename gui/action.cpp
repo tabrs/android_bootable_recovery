@@ -1973,7 +1973,6 @@ int GUIAction::checkforapp(std::string arg __unused)
 
 int GUIAction::installapp(std::string arg __unused)
 {
-	int op_status = 1;
 	operation_start("Install TWRP App");
 	if (!simulate)
 	{
@@ -1990,7 +1989,7 @@ int GUIAction::installapp(std::string arg __unused)
 						LOGERR("chown %s error: %s\n", install_path.c_str(), strerror(errno));
 						goto exit;
 					}
-					if (setfilecon(install_path.c_str(), (security_context_t)context.c_str()) < 0) {
+					if (setfilecon(install_path.c_str(), (char *)context.c_str()) < 0) {
 						LOGERR("setfilecon %s error: %s\n", install_path.c_str(), strerror(errno));
 						goto exit;
 					}
@@ -2004,7 +2003,7 @@ int GUIAction::installapp(std::string arg __unused)
 					LOGERR("chown %s error: %s\n", install_path.c_str(), strerror(errno));
 					goto exit;
 				}
-				if (setfilecon(install_path.c_str(), (security_context_t)context.c_str()) < 0) {
+				if (setfilecon(install_path.c_str(), (char *)context.c_str()) < 0) {
 					LOGERR("setfilecon %s error: %s\n", install_path.c_str(), strerror(errno));
 					goto exit;
 				}
@@ -2017,7 +2016,7 @@ int GUIAction::installapp(std::string arg __unused)
 					LOGERR("chown %s error: %s\n", install_path.c_str(), strerror(errno));
 					goto exit;
 				}
-				if (setfilecon(install_path.c_str(), (security_context_t)context.c_str()) < 0) {
+				if (setfilecon(install_path.c_str(), (char *)context.c_str()) < 0) {
 					LOGERR("setfilecon %s error: %s\n", install_path.c_str(), strerror(errno));
 					goto exit;
 				}
@@ -2037,7 +2036,7 @@ int GUIAction::installapp(std::string arg __unused)
 					install_path += "/twrpapp";
 					LOGINFO("Installing app to '%s'\n", install_path.c_str());
 					if (mkdir(install_path.c_str(), S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH) == 0) {
-						if (setfilecon(install_path.c_str(), (security_context_t)context.c_str()) < 0) {
+						if (setfilecon(install_path.c_str(), (char *)context.c_str()) < 0) {
 							LOGERR("setfilecon %s error: %s\n", install_path.c_str(), strerror(errno));
 							goto exit;
 						}
@@ -2046,7 +2045,7 @@ int GUIAction::installapp(std::string arg __unused)
 							LOGERR("Error copying apk file\n");
 							goto exit;
 						}
-						if (setfilecon(install_path.c_str(), (security_context_t)context.c_str()) < 0) {
+						if (setfilecon(install_path.c_str(), (char *)context.c_str()) < 0) {
 							LOGERR("setfilecon %s error: %s\n", install_path.c_str(), strerror(errno));
 							goto exit;
 						}
@@ -2061,7 +2060,7 @@ int GUIAction::installapp(std::string arg __unused)
 							LOGERR("chown %s error: %s\n", permission_path.c_str(), strerror(errno));
 							goto exit;
 						}
-						if (setfilecon(permission_path.c_str(), (security_context_t)context.c_str()) < 0) {
+						if (setfilecon(permission_path.c_str(), (char *)context.c_str()) < 0) {
 							LOGERR("setfilecon %s error: %s\n", permission_path.c_str(), strerror(errno));
 							goto exit;
 						}
@@ -2069,7 +2068,6 @@ int GUIAction::installapp(std::string arg __unused)
 						sync();
 						sync();
 						PartitionManager.UnMount_By_Path(PartitionManager.Get_Android_Root_Path(), true);
-						op_status = 0;
 					} else {
 						LOGERR("Error making app directory '%s': %s\n", strerror(errno));
 					}

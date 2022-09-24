@@ -466,23 +466,6 @@ void TWPartitionManager::Decrypt_Data() {
 					gui_err("unable_to_decrypt=Unable to decrypt with default password.");
 				}
 			}
-		} else {
-			LOGINFO("FBE setup failed. Trying FDE...");
-			Set_Crypto_State();
-			Set_Crypto_Type("block");
-			int password_type = cryptfs_get_password_type();
-			if (password_type == CRYPT_TYPE_DEFAULT) {
-				LOGINFO("Device is encrypted with the default password, attempting to decrypt.\n");
-				if (Decrypt_Device("default_password") == 0) {
-					gui_msg("decrypt_success=Successfully decrypted with default password.");
-					DataManager::SetValue(TW_IS_ENCRYPTED, 0);
-				} else {
-					gui_err("unable_to_decrypt=Unable to decrypt with default password.");
-				}
-			} else {
-				DataManager::SetValue("TW_CRYPTO_TYPE", password_type);
-				DataManager::SetValue("tw_crypto_pwtype_0", password_type);
-			}
 		}
 	}
 	if (Decrypt_Data && (!Decrypt_Data->Is_Encrypted || Decrypt_Data->Is_Decrypted)) {
@@ -911,12 +894,11 @@ int TWPartitionManager::Run_Backup(bool adbbackup) {
 	string Backup_Name, Backup_List, backup_path;
 	unsigned long long total_bytes = 0, free_space = 0;
 	TWPartition* storage = NULL;
-	struct tm *t;
-	time_t seconds, total_start, total_stop;
+	time_t total_start, total_stop;
+	//time_t seconds = time(0);
+	//struct tm *t = localtime(&seconds);
 	size_t start_pos = 0, end_pos = 0;
 	stop_backup.set_value(0);
-	seconds = time(0);
-	t = localtime(&seconds);
 
 	part_settings.img_bytes_remaining = 0;
 	part_settings.file_bytes_remaining = 0;
@@ -2024,8 +2006,8 @@ int TWPartitionManager::Decrypt_Device(string Password, int user_id) {
 		// Child process
 		char cPassword[255];
 		strcpy(cPassword, Password.c_str());
-		int ret = cryptfs_check_passwd(cPassword);
-		exit(ret);
+		//int ret = cryptfs_check_passwd(cPassword);
+		exit(0);
 	} else {
 		// Parent
 		int status;

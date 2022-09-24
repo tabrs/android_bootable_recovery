@@ -18,17 +18,19 @@ commands_TWRP_local_path := $(LOCAL_PATH)
 ifneq ($(project-path-for),)
     ifeq ($(LOCAL_PATH),$(call project-path-for,recovery))
         PROJECT_PATH_AGREES := true
-        BOARD_SEPOLICY_DIRS += $(call project-path-for,recovery)/sepolicy
+        BOARD_VENDOR_SEPOLICY_DIRS += $(call project-path-for,recovery)/sepolicy
     endif
 else
+    $(warning BOARD_VENDOR_SEPOLICY_DIRS: $(LOCAL_PATH))
     ifeq ($(LOCAL_PATH),bootable/recovery)
         PROJECT_PATH_AGREES := true
-        BOARD_SEPOLICY_DIRS += bootable/recovery/sepolicy
+        BOARD_VENDOR_SEPOLICY_DIRS += bootable/recovery/sepolicy
+        $(warning BOARD_VENDOR_SEPOLICY_DIRS2: $(BOARD_VENDOR_SEPOLICY_DIRS))
     else
         ifeq ($(LOCAL_PATH),bootable/recovery-twrp)
             ifeq ($(RECOVERY_VARIANT),twrp)
                 PROJECT_PATH_AGREES := true
-                BOARD_SEPOLICY_DIRS += bootable/recovery-twrp/sepolicy
+                BOARD_VENDOR_SEPOLICY_DIRS += bootable/recovery-twrp/sepolicy
             endif
         endif
     endif
@@ -314,14 +316,14 @@ ifeq ($(TW_INCLUDE_CRYPTO), true)
     TW_INCLUDE_CRYPTO_FBE := true
     LOCAL_CFLAGS += -DTW_INCLUDE_FBE
     LOCAL_SHARED_LIBRARIES += android.frameworks.stats@1.0 android.hardware.authsecret@1.0 \
-	android.security.authorization-ndk_platform \
+	android.security.authorization-ndk \
         android.hardware.oemlock@1.0 libf2fs_sparseblock libbinder libbinder_ndk \
         libandroidicu.recovery \
         android.hardware.gatekeeper@1.0 \
         android.hardware.weaver@1.0 \
         android.frameworks.stats@1.0 \
-        android.security.maintenance-ndk_platform \
-        android.system.keystore2-V1-ndk_platform \
+        android.security.maintenance-ndk \
+        android.system.keystore2-V1-ndk \
         libkeyutils \
         liblog \
         libsqlite.recovery \
@@ -602,6 +604,16 @@ endif
 
 TWRP_REQUIRED_MODULES += file_contexts_text
 
+LOCAL_REQUIRED_MODULES += \
+    mkfs.erofs.recovery \
+    dump.erofs.recovery \
+    fsck.erofs.recovery
+
+# On A/B devices recovery-persist reads the recovery related file from the persist storage and
+# copies them into /data/misc/recovery. Then, for both A/B and non-A/B devices, recovery-persist
+# parses the last_install file and reports the embedded update metrics. Also, the last_install file
+# will be deteleted after the report.
+LOCAL_REQUIRED_MODULES += recovery-persist
 ifeq ($(BOARD_CACHEIMAGE_PARTITION_SIZE),)
     TWRP_REQUIRED_MODULES += recovery-persist recovery-refresh
 endif

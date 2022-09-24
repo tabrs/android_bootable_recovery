@@ -16,9 +16,7 @@
 
 #include "install/wipe_data.h"
 
-#include <stdio.h>
 #include <string.h>
-#include <sys/stat.h>
 
 #include <functional>
 #include <vector>
@@ -34,12 +32,11 @@
 #include "recovery_utils/roots.h"
 
 constexpr const char* CACHE_ROOT = "/cache";
-constexpr const char* DATA_ROOT = "/data";
-constexpr const char* METADATA_ROOT = "/metadata";
+//constexpr const char* DATA_ROOT = "/data";
+//constexpr const char* METADATA_ROOT = "/metadata";
 
-static bool EraseVolume(const char* volume, bool convert_fbe) {
+static bool EraseVolume(const char* volume) {
   bool is_cache = (strcmp(volume, CACHE_ROOT) == 0);
-  bool is_data = (strcmp(volume, DATA_ROOT) == 0);
 
   // ui->SetBackground(RecoveryUI::ERASING);
   // ui->SetProgressType(RecoveryUI::INDETERMINATE);
@@ -55,28 +52,7 @@ static bool EraseVolume(const char* volume, bool convert_fbe) {
 
   ensure_path_unmounted(volume);
 
-  int result;
-  if (is_data && convert_fbe) {
-    constexpr const char* CONVERT_FBE_DIR = "/tmp/convert_fbe";
-    constexpr const char* CONVERT_FBE_FILE = "/tmp/convert_fbe/convert_fbe";
-    // Create convert_fbe breadcrumb file to signal init to convert to file based encryption, not
-    // full disk encryption.
-    if (mkdir(CONVERT_FBE_DIR, 0700) != 0) {
-      PLOG(ERROR) << "Failed to mkdir " << CONVERT_FBE_DIR;
-      return false;
-    }
-    FILE* f = fopen(CONVERT_FBE_FILE, "wbe");
-    if (!f) {
-      PLOG(ERROR) << "Failed to convert to file encryption";
-      return false;
-    }
-    fclose(f);
-    result = format_volume(volume, CONVERT_FBE_DIR);
-    remove(CONVERT_FBE_FILE);
-    rmdir(CONVERT_FBE_DIR);
-  } else {
-    result = format_volume(volume);
-  }
+  int result = format_volume(volume);
 
   if (is_cache) {
     RestoreLogFilesAfterFormat(log_files);
@@ -100,12 +76,12 @@ bool WipeCache(const std::function<bool()>& confirm_func) {
   // ui->SetBackground(RecoveryUI::ERASING);
   // ui->SetProgressType(RecoveryUI::INDETERMINATE);
 
-  bool success = EraseVolume("/cache", false);
-  // ui->Print("Cache wipe %s.\n", success ? "complete" : "failed");
+  bool success = EraseVolume("/cache");
+  //ui->Print("Cache wipe %s.\n", success ? "complete" : "failed");
   return success;
 }
 
-bool WipeData(Device* device, bool convert_fbe) {
+bool WipeData() {
   // RecoveryUI* ui = device->GetUI();
   // ui->Print("\n-- Wiping data...\n");
   // ui->SetBackground(RecoveryUI::ERASING);
@@ -116,20 +92,21 @@ bool WipeData(Device* device, bool convert_fbe) {
   //   return false;
   // }
 
-  bool success = device->PreWipeData();
-  if (success) {
-    success &= EraseVolume(DATA_ROOT, convert_fbe);
-    bool has_cache = volume_for_mount_point("/cache") != nullptr;
-    if (has_cache) {
-      success &= EraseVolume(CACHE_ROOT, false);
-    }
-    if (volume_for_mount_point(METADATA_ROOT) != nullptr) {
-      success &= EraseVolume(METADATA_ROOT, false);
-    }
-  }
-  if (success) {
-    success &= device->PostWipeData();
-  }
+  //bool success = device->PreWipeData();
+  bool success = true;
+  //if (success) {
+    //success &= EraseVolume(DATA_ROOT);
+    //bool has_cache = volume_for_mount_point("/cache") != nullptr;
+    //if (has_cache) {
+    //  success &= EraseVolume(CACHE_ROOT);
+   // }
+    //if (volume_for_mount_point(METADATA_ROOT) != nullptr) {
+      //success &= EraseVolume(METADATA_ROOT);
+    //}
+  //}
+  //if (success) {
+    //success &= device->PostWipeData();
+  //}
   // ui->Print("Data wipe %s.\n", success ? "complete" : "failed");
   return success;
 }

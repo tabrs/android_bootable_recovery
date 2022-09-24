@@ -46,13 +46,13 @@
 #include <android-base/strings.h>
 #include <android-base/unique_fd.h>
 
-#include "install/package.h"
 #include "install/spl_check.h"
-#include "install/verifier.h"
 #include "install/wipe_data.h"
 #include "otautil/error_code.h"
+#include "otautil/package.h"
 #include "otautil/paths.h"
 #include "otautil/sysutil.h"
+#include "otautil/verifier.h"
 #include "private/setup_commands.h"
 #include "recovery_ui/ui.h"
 #include "recovery_utils/roots.h"
@@ -235,30 +235,41 @@ bool CheckPackageMetadata(const std::map<std::string, std::string>& metadata, Ot
   return true;
 }
 
-bool SetUpAbUpdateCommands(const std::string& package, ZipArchiveHandle zip, int status_fd,
-                           std::vector<std::string>* cmd) {
-  CHECK(cmd != nullptr);
-
+static std::string ExtractPayloadProperties(ZipArchiveHandle zip) {
   // For A/B updates we extract the payload properties to a buffer and obtain the RAW payload offset
   // in the zip file.
   static constexpr const char* AB_OTA_PAYLOAD_PROPERTIES = "payload_properties.txt";
   ZipEntry64 properties_entry;
   if (FindEntry(zip, AB_OTA_PAYLOAD_PROPERTIES, &properties_entry) != 0) {
     LOG(ERROR) << "Failed to find " << AB_OTA_PAYLOAD_PROPERTIES;
-    return false;
+    return {};
   }
   auto properties_entry_length = properties_entry.uncompressed_length;
   if (properties_entry_length > std::numeric_limits<size_t>::max()) {
     LOG(ERROR) << "Failed to extract " << AB_OTA_PAYLOAD_PROPERTIES
                << " because's uncompressed size exceeds size of address space. "
                << properties_entry_length;
-    return false;
+    return {};
   }
-  std::vector<uint8_t> payload_properties(properties_entry_length);
+  std::string payload_properties(properties_entry_length, '\0');
   int32_t err =
-      ExtractToMemory(zip, &properties_entry, payload_properties.data(), properties_entry_length);
+      ExtractToMemory(zip, &properties_entry, reinterpret_cast<uint8_t*>(payload_properties.data()),
+                      properties_entry_length);
   if (err != 0) {
     LOG(ERROR) << "Failed to extract " << AB_OTA_PAYLOAD_PROPERTIES << ": " << ErrorCodeString(err);
+    return {};
+  }
+  return payload_properties;
+}
+
+bool SetUpAbUpdateCommands(const std::string& package, ZipArchiveHandle zip, int status_fd,
+                           std::vector<std::string>* cmd) {
+  CHECK(cmd != nullptr);
+
+  // For A/B updates we extract the payload properties to a buffer and obtain the RAW payload offset
+  // in the zip file.
+  const auto payload_properties = ExtractPayloadProperties(zip);
+  if (payload_properties.empty()) {
     return false;
   }
 
@@ -330,6 +341,15 @@ static void log_max_temperature(int* max_temperature, const std::atomic<bool>& l
          finish_log_temperature.wait_for(lck, 20s) == std::cv_status::timeout) {
     *max_temperature = std::max(*max_temperature, GetMaxValueFromThermalZone());
   }
+}
+
+static bool PerformPowerwashIfRequired(ZipArchiveHandle zip) {
+  const auto payload_properties = ExtractPayloadProperties(zip);
+  if (payload_properties.find("POWERWASH=1") != std::string::npos) {
+    LOG(INFO) << "Payload properties has POWERWASH=1, wiping userdata...";
+    return WipeData();
+  }
+  return true;
 }
 
 // If the package contains an update binary, extract it and run it.
@@ -530,6 +550,7 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
   } else {
     LOG(FATAL) << "Invalid status code " << status;
   }
+  PerformPowerwashIfRequired(zip);
 
   return INSTALL_SUCCESS;
 }

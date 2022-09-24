@@ -6,7 +6,7 @@ LOCAL_MODULE := pigz
 LOCAL_MODULE_TAGS := optional
 LOCAL_MODULE_CLASS := RECOVERY_EXECUTABLES
 LOCAL_MODULE_PATH := $(TARGET_RECOVERY_ROOT_OUT)/system/bin
-LOCAL_CFLAGS :=
+LOCAL_CFLAGS := -Wno-unused-but-set-variable
 LOCAL_SRC_FILES = pigz.c yarn.c
 LOCAL_C_INCLUDES += $(LOCAL_PATH) \
 					external/zlib

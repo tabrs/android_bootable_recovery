@@ -680,21 +680,22 @@ void TWPartition::Setup_Data_Partition(bool Display_Error) {
 		if (Is_Present) {
 			if (Key_Directory.empty()) {
 				set_partition_data(Use_Original_Path ? Original_Path.c_str() : Actual_Block_Device.c_str(), Crypto_Key_Location.c_str());
-				if (cryptfs_check_footer() == 0) {
-					Is_Encrypted = true;
-					Is_Decrypted = false;
-					Can_Be_Mounted = false;
-					Current_File_System = "emmc";
-					Setup_Image();
-					DataManager::SetValue(TW_CRYPTO_PWTYPE, cryptfs_get_password_type());
-					DataManager::SetValue("tw_crypto_pwtype_0", cryptfs_get_password_type());
-					DataManager::SetValue(TW_CRYPTO_PASSWORD, "");
-					DataManager::SetValue("tw_crypto_display", "");
-					if (datamedia)
-						Setup_Data_Media();
-				} else {
-					gui_err("mount_data_footer=Could not mount /data and unable to find crypto footer.");
-				}
+				//if (cryptfs_check_footer() == 0) {
+				//	Is_Encrypted = true;
+				//	Is_Decrypted = false;
+				//	Can_Be_Mounted = false;
+				//	Current_File_System = "emmc";
+				//	Setup_Image();
+				//	DataManager::SetValue(TW_CRYPTO_PWTYPE, cryptfs_get_password_type());
+				//	DataManager::SetValue("tw_crypto_pwtype_0", cryptfs_get_password_type());
+				//	DataManager::SetValue(TW_CRYPTO_PASSWORD, "");
+				//	DataManager::SetValue("tw_crypto_display", "");
+				//	if (datamedia)
+				//		Setup_Data_Media();
+				//}
+				// else {
+				//	gui_err("mount_data_footer=Could not mount /data and unable to find crypto footer.");
+				//}
 			} else {
 				Is_Encrypted = true;
 				Is_Decrypted = false;
@@ -1728,7 +1729,7 @@ bool TWPartition::ReMount_RW(bool Display_Error) {
 }
 
 bool TWPartition::Wipe(string New_File_System) {
-	bool wiped = false, update_crypt = false, recreate_media = true;
+	bool wiped = false, update_crypt = false, recreate_media = false;
 	int check;
 
 	if (!Can_Be_Wiped) {
